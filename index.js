@@ -4,9 +4,18 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const connection = require('./db'); 
 const { userTableSchema, booksTableSchema } = require('./esquema');
-
+const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  next();
+});
+
 
 const createTables = () => {
   connection.query(userTableSchema, (err) => {
