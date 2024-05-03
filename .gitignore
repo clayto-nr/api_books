@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Arquivos de backup
+*.bak
+
+# Arquivos de log
+logs
+*.log
+
+# Arquivos de dados
+data
+
+# Arquivos temporários
+.tmp
+.temp
