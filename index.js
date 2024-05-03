@@ -89,11 +89,15 @@ app.post('/login', (req, res) => {
         return res.status(401).send('Credenciais inválidas');
       }
       
+      // Adiciona o ID do usuário à carga útil do token JWT
       const token = jwt.sign({ userId: user.id }, 'seu_segredo', { expiresIn: '1h' });
-      res.status(200).json({ token });
+
+      // Retorna o token de acesso junto com o ID do usuário
+      res.status(200).json({ userId: user.id, token });
     });
   });
 });
+
 
 // Middleware para verificar o token JWT
 const verifyToken = (req, res, next) => {
