@@ -186,21 +186,34 @@ app.get('/books/:bookId', (req, res) => {
 });
 
 
-// Rota para adicionar um livro
-app.post('/my-books', verifyToken, (req, res) => {
-  const userId = req.userId;
-  const { name, description } = req.body;
-  const addBookQuery = 'INSERT INTO books (name, description, user_id) VALUES (?, ?, ?)';
-  connection.query(addBookQuery, [name, description, userId], (err) => {
+app.post('/books/:bookId/comments', verifyToken, (req, res) => {
+  const { bookId } = req.params;
+  const { userId, comment } = req.body;
+
+  // Verifica se o ID do usuário e o comentário foram fornecidos
+  if (!userId || !comment) {
+    return res.status(400).send('ID do usuário e comentário são obrigatórios');
+  }
+
+  const addCommentQuery = 'INSERT INTO comments (book_id, user_id, comment) VALUES (?, ?, ?)';
+  connection.query(addCommentQuery, [bookId, userId, comment], (err, result) => {
     if (err) {
-      console.error('Erro ao adicionar livro:', err);
-      res.status(500).send('Erro ao adicionar livro');
+      console.error('Erro ao adicionar comentário:', err);
+      return res.status(500).send('Erro ao adicionar comentário');
+    } 
+    
+    // Verifica se o comentário foi adicionado com sucesso
+    if (result.affectedRows === 1) {
+      console.log('Comentário adicionado com sucesso');
+      res.status(200).send('Comentário adicionado com sucesso');
     } else {
-      console.log('Livro adicionado com sucesso');
-      res.status(200).send('Livro adicionado com sucesso');
+      console.error('Erro ao adicionar comentário');
+      res.status(500).send('Erro ao adicionar comentário');
     }
   });
 });
+;
+
 
 app.get('/my-books/:userId', verifyToken, (req, res) => {
   const userId = req.params.userId;
@@ -256,7 +269,13 @@ app.get('/users', (req, res) => {
 app.get('/books/:bookId/comments', (req, res) => {
   const { bookId } = req.params;
 
-  const getCommentsQuery = 'SELECT * FROM comments WHERE book_id = ?';
+  const getCommentsQuery = `
+    SELECT c.id, c.comment, u.username 
+    FROM comments c
+    JOIN users_table u ON c.user_id = u.id
+    WHERE c.book_id = ?
+  `;
+  
   connection.query(getCommentsQuery, [bookId], (err, results) => {
     if (err) {
       console.error('Erro ao buscar comentários:', err);
@@ -267,21 +286,7 @@ app.get('/books/:bookId/comments', (req, res) => {
   });
 });
 
-app.post('/books/:bookId/comments', verifyToken, (req, res) => {
-  const { bookId } = req.params;
-  const { userId, username, comment } = req.body;
-
-  const addCommentQuery = 'INSERT INTO comments (book_id, user_id, username, comment) VALUES (?, ?, ?, ?)';
-  connection.query(addCommentQuery, [bookId, userId, username, comment], (err) => {
-    if (err) {
-      console.error('Erro ao adicionar comentário:', err);
-      res.status(500).send('Erro ao adicionar comentário');
-    } else {
-      console.log('Comentário adicionado com sucesso');
-      res.status(200).send('Comentário adicionado com sucesso');
-    }
-  });
-});
+;
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
