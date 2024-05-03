@@ -1,10 +1,8 @@
-// index.js
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const connection = require('./db'); // Importando a conexão com o banco de dados
+const connection = require('./db'); 
 const { userTableSchema, booksTableSchema } = require('./esquema');
 
 const app = express();
@@ -114,6 +112,67 @@ app.get('/books', (req, res) => {
   });
 });
 
+
+// Rota para buscar um livro pelo seu ID
+app.get('/books/:bookId', (req, res) => {
+  const bookId = req.params.bookId;
+  const getBookQuery = 'SELECT * FROM books WHERE id = ?';
+  const updateViewsQuery = 'UPDATE books SET views = views + 1 WHERE id = ?';
+
+  connection.beginTransaction(err => {
+    if (err) {
+      console.error('Erro ao iniciar a transação:', err);
+      res.status(500).send('Erro interno do servidor');
+      return;
+    }
+
+    connection.query(getBookQuery, [bookId], (err, result) => {
+      if (err) {
+        console.error('Erro ao buscar livro:', err);
+        connection.rollback(() => {
+          res.status(500).send('Erro ao buscar livro');
+        });
+        return;
+      }
+
+      if (result.length === 0) {
+        connection.rollback(() => {
+          res.status(404).send('Livro não encontrado');
+        });
+        return;
+      }
+
+      const book = result[0];
+      
+      connection.query(updateViewsQuery, [bookId], (err) => {
+        if (err) {
+          console.error('Erro ao atualizar visualizações do livro:', err);
+          connection.rollback(() => {
+            res.status(500).send('Erro ao atualizar visualizações do livro');
+          });
+          return;
+        }
+
+        connection.commit(err => {
+          if (err) {
+            console.error('Erro ao confirmar a transação:', err);
+            connection.rollback(() => {
+              res.status(500).send('Erro interno do servidor');
+            });
+            return;
+          }
+
+          res.status(200).json({
+            ...book,
+            views: book.views + 1
+          });
+        });
+      });
+    });
+  });
+});
+
+
 // Rota para adicionar um livro
 app.post('/my-books', verifyToken, (req, res) => {
   const userId = req.userId;
@@ -130,7 +189,6 @@ app.post('/my-books', verifyToken, (req, res) => {
   });
 });
 
-// Rota para listar os livros de um usuário específico
 app.get('/my-books/:userId', verifyToken, (req, res) => {
   const userId = req.params.userId;
   const getMyBooksQuery = 'SELECT * FROM books WHERE user_id = ?';
@@ -176,6 +234,38 @@ app.get('/users', (req, res) => {
           }
         });
       });
+    }
+  });
+});
+
+
+
+app.get('/books/:bookId/comments', (req, res) => {
+  const { bookId } = req.params;
+
+  const getCommentsQuery = 'SELECT * FROM comments WHERE book_id = ?';
+  connection.query(getCommentsQuery, [bookId], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar comentários:', err);
+      res.status(500).send('Erro ao buscar comentários');
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});
+
+app.post('/books/:bookId/comments', verifyToken, (req, res) => {
+  const { bookId } = req.params;
+  const { userId, username, comment } = req.body;
+
+  const addCommentQuery = 'INSERT INTO comments (book_id, user_id, username, comment) VALUES (?, ?, ?, ?)';
+  connection.query(addCommentQuery, [bookId, userId, username, comment], (err) => {
+    if (err) {
+      console.error('Erro ao adicionar comentário:', err);
+      res.status(500).send('Erro ao adicionar comentário');
+    } else {
+      console.log('Comentário adicionado com sucesso');
+      res.status(200).send('Comentário adicionado com sucesso');
     }
   });
 });
