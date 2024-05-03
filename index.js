@@ -6,7 +6,7 @@ const connection = require('./db');
 const { userTableSchema, booksTableSchema } = require('./esquema');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 const createTables = () => {
   connection.query(userTableSchema, (err) => {
