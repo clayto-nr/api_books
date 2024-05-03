@@ -14,3 +14,6 @@ data
 # Arquivos temporários
 .tmp
 .temp
+
+# Arquivo de configuração sensível
+.env

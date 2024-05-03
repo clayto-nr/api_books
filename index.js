@@ -1,58 +1,30 @@
+// index.js
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const mysql = require('mysql');
+const connection = require('./db'); // Importando a conexão com o banco de dados
+const { userTableSchema, booksTableSchema } = require('./esquema');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const connection = mysql.createConnection({
- 
-});
-
 const createTables = () => {
-  connection.connect((err) => {
+  connection.query(userTableSchema, (err) => {
     if (err) {
-      console.error('Erro ao conectar ao banco de dados:', err);
-      return;
+      console.error('Erro ao criar a tabela de usuários:', err);
+    } else {
+      console.log('Tabela de usuários criada com sucesso');
     }
-    console.log('Conectado ao banco de dados');
+  });
 
-    const createUserTableQuery = `
-      CREATE TABLE IF NOT EXISTS users_table (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL
-      )
-    `;
-
-    const createBooksTableQuery = `
-      CREATE TABLE IF NOT EXISTS books (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT NOT NULL,
-        user_id INT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users_table(id)
-      )
-    `;
-
-    connection.query(createUserTableQuery, (err) => {
-      if (err) {
-        console.error('Erro ao criar a tabela de usuários:', err);
-      } else {
-        console.log('Tabela de usuários criada com sucesso');
-      }
-    });
-
-    connection.query(createBooksTableQuery, (err) => {
-      if (err) {
-        console.error('Erro ao criar a tabela de livros:', err);
-      } else {
-        console.log('Tabela de livros criada com sucesso');
-      }
-    });
+  connection.query(booksTableSchema, (err) => {
+    if (err) {
+      console.error('Erro ao criar a tabela de livros:', err);
+    } else {
+      console.log('Tabela de livros criada com sucesso');
+    }
   });
 };
 
@@ -88,33 +60,6 @@ app.post('/register', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-
-  const getUserQuery = 'SELECT * FROM users_table WHERE email = ?';
-  connection.query(getUserQuery, [email], (err, results) => {
-    if (err) {
-      console.error('Erro ao buscar usuário:', err);
-      return res.status(500).send('Erro ao fazer login');
-    }
-    if (results.length === 0) {
-      return res.status(401).send('Usuário não encontrado');
-    }
-
-    const user = results[0];
-    bcrypt.compare(password, user.password, (err, result) => {
-      if (err) {
-        console.error('Erro ao comparar senhas:', err);
-        return res.status(500).send('Erro ao fazer login');
-      }
-      if (!result) {
-        return res.status(401).send('Credenciais inválidas');
-      }
-      
-      const token = jwt.sign({ userId: user.id }, 'seu_segredo', { expiresIn: '1h' });
-      res.status(200).json({ token });
-    });
-  });
-});app.post('/login', (req, res) => {
   const { email, password } = req.body;
 
   const getUserQuery = 'SELECT * FROM users_table WHERE email = ?';
