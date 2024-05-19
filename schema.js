@@ -1,14 +1,16 @@
-// schema.js
+require('dotenv').config(); // Carrega as variáveis de ambiente do arquivo .env
 
 const mysql = require('mysql');
+const jwt = require('jsonwebtoken');
 
+// Conexão com o banco de dados usando variáveis de ambiente
 const connection = mysql.createConnection({
-    host: 'reabdeveloper.cnc2uo2c2n1k.us-east-1.rds.amazonaws.com',
-    user: 'admin',
-    password: '2vbboakuKu.',
-    database: 'reabdeveloperr',
-    port: 3306
-  });
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT
+});
 
 // Esquema para criar as tabelas
 const createTables = () => {
