@@ -9,12 +9,15 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 
+
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   next();
 });
+
+
 
 
 const createTables = () => {
@@ -43,7 +46,7 @@ app.get('/', (req, res) => {
   res.send('Servidor em execução!');
 });
 
-// Rota de registro de usuário
+
 app.post('/register', (req, res) => {
   const { username, email, password } = req.body;
 
@@ -63,6 +66,44 @@ app.post('/register', (req, res) => {
         }
       });
     }
+  });
+});
+
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(401).send('Acesso negado. Token não fornecido.');
+
+  const token = authHeader.split(' ')[1];
+  if (!token) return res.status(401).send('Acesso negado. Token não fornecido corretamente.');
+
+  jwt.verify(token, 'seu_segredo', (err, decoded) => {
+    if (err) {
+      console.error('Erro ao verificar o token:', err);
+      return res.status(401).send('Token inválido.');
+    }
+    req.userId = decoded.userId;
+    next();
+  });
+};
+
+
+app.get('/me', verifyToken, (req, res) => {
+  const userId = req.userId;
+  if (!userId) return res.status(401).send('Usuário não autenticado.');
+
+  const getUserQuery = 'SELECT id, username, email FROM users_table WHERE id = ?';
+  connection.query(getUserQuery, [userId], (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar dados do usuário:', err);
+      return res.status(500).send('Erro ao buscar dados do usuário');
+    }
+
+    if (results.length === 0) {
+      return res.status(404).send('Usuário não encontrado');
+    }
+
+    const userData = results[0];
+    res.status(200).json(userData);
   });
 });
 
@@ -99,18 +140,6 @@ app.post('/login', (req, res) => {
 });
 
 
-// Middleware para verificar o token JWT
-const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization'];
-  if (!token) return res.status(401).send('Acesso negado. Token não fornecido.');
-
-  jwt.verify(token.split(' ')[1], 'seu_segredo', (err, decoded) => {
-    if (err) return res.status(401).send('Token inválido.');
-
-    req.userId = decoded.userId;
-    next();
-  });
-};
 
 // Rota para listar todos os livros
 app.get('/books', (req, res) => {
