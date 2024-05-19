@@ -43,7 +43,7 @@ createTables();
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  res.send('Servidor em execução!');
+  res.send('Servidor em execução! 1.0');
 });
 
 
