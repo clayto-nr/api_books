@@ -8,17 +8,12 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-
-
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   next();
 });
-
-
-
 
 const createTables = () => {
   connection.query(userTableSchema, (err) => {
@@ -45,7 +40,6 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => {
   res.send('Servidor em execução! 1.0');
 });
-
 
 app.post('/register', (req, res) => {
   const { username, email, password } = req.body;
@@ -85,7 +79,6 @@ const verifyToken = (req, res, next) => {
     next();
   });
 };
-
 
 app.get('/me', verifyToken, (req, res) => {
   const userId = req.userId;
@@ -130,18 +123,13 @@ app.post('/login', (req, res) => {
         return res.status(401).send('Credenciais inválidas');
       }
       
-      // Adiciona o ID do usuário à carga útil do token JWT
       const token = jwt.sign({ userId: user.id }, 'seu_segredo', { expiresIn: '1h' });
 
-      // Retorna o token de acesso junto com o ID do usuário
       res.status(200).json({ userId: user.id, token });
     });
   });
 });
 
-
-
-// Rota para listar todos os livros
 app.get('/books', (req, res) => {
   const getBooksQuery = 'SELECT * FROM books';
   connection.query(getBooksQuery, (err, results) => {
@@ -154,8 +142,6 @@ app.get('/books', (req, res) => {
   });
 });
 
-
-// Rota para buscar um livro pelo seu ID
 app.get('/books/:bookId', (req, res) => {
   const bookId = req.params.bookId;
   const getBookQuery = 'SELECT * FROM books WHERE id = ?';
@@ -214,12 +200,10 @@ app.get('/books/:bookId', (req, res) => {
   });
 });
 
-
 app.post('/books/:bookId/comments', verifyToken, (req, res) => {
   const { bookId } = req.params;
   const { userId, comment } = req.body;
 
-  // Verifica se o ID do usuário e o comentário foram fornecidos
   if (!userId || !comment) {
     return res.status(400).send('ID do usuário e comentário são obrigatórios');
   }
@@ -231,7 +215,6 @@ app.post('/books/:bookId/comments', verifyToken, (req, res) => {
       return res.status(500).send('Erro ao adicionar comentário');
     } 
     
-    // Verifica se o comentário foi adicionado com sucesso
     if (result.affectedRows === 1) {
       console.log('Comentário adicionado com sucesso');
       res.status(200).send('Comentário adicionado com sucesso');
@@ -241,8 +224,6 @@ app.post('/books/:bookId/comments', verifyToken, (req, res) => {
     }
   });
 });
-;
-
 
 app.get('/my-books/:userId', verifyToken, (req, res) => {
   const userId = req.params.userId;
@@ -293,8 +274,6 @@ app.get('/users', (req, res) => {
   });
 });
 
-
-
 app.get('/books/:bookId/comments', (req, res) => {
   const { bookId } = req.params;
 
@@ -315,7 +294,26 @@ app.get('/books/:bookId/comments', (req, res) => {
   });
 });
 
-;
+app.post('/books', verifyToken, (req, res) => {
+  const { name, description, user_id } = req.body;
+
+  const createBookQuery = 'INSERT INTO books (name, description, user_id) VALUES (?, ?, ?)';
+  connection.query(createBookQuery, [name, description, user_id], (err, result) => {
+    if (err) {
+      console.error('Erro ao criar livro:', err);
+      return res.status(500).send('Erro ao criar livro');
+    } 
+    
+    if (result.affectedRows === 1) {
+      console.log('Livro criado com sucesso');
+      res.status(200).send('Livro criado com sucesso');
+    } else {
+      console.error('Erro ao criar livro');
+      res.status(500).send('Erro ao criar livro');
+    }
+  });
+});
+
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
