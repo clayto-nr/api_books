@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const connection = require('./db'); 
-const { userTableSchema, booksTableSchema } = require('./esquema');
+const { userTableSchema, booksTableSchema, commentsTableSchema } = require('./esquema');
 const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,7 +34,16 @@ const createTables = () => {
       console.log('Tabela de livros criada com sucesso');
     }
   });
+
+  connection.query(commentsTableSchema, (err) => {
+    if (err) {
+      console.error('Erro ao criar a tabela de comentários:', err);
+    } else {
+      console.log('Tabela de comentários criada com sucesso');
+    }
+  });
 };
+
 
 createTables();
 
@@ -203,28 +212,55 @@ app.get('/books/:bookId', (req, res) => {
   const getBookQuery = 'SELECT * FROM books WHERE id = ?';
   const updateViewsQuery = 'UPDATE books SET views = views + 1 WHERE id = ?';
 
-  connection.query(getBookQuery, [bookId], (err, result) => {
+  connection.beginTransaction(err => {
     if (err) {
-      console.error('Erro ao buscar livro:', err);
+      console.error('Erro ao iniciar a transação:', err);
       res.status(500).send('Erro interno do servidor');
       return;
     }
 
-    if (result.length === 0) {
-      res.status(404).send('Livro não encontrado');
-      return;
-    }
-
-    const book = result[0];
-
-    connection.query(updateViewsQuery, [bookId], (err) => {
+    connection.query(getBookQuery, [bookId], (err, result) => {
       if (err) {
-        console.error('Erro ao atualizar visualizações do livro:', err);
-        res.status(500).send('Erro interno do servidor');
+        console.error('Erro ao buscar livro:', err);
+        connection.rollback(() => {
+          res.status(500).send('Erro ao buscar livro');
+        });
         return;
       }
 
-      res.status(200).json(book);
+      if (result.length === 0) {
+        connection.rollback(() => {
+          res.status(404).send('Livro não encontrado');
+        });
+        return;
+      }
+
+      const book = result[0];
+      
+      connection.query(updateViewsQuery, [bookId], (err) => {
+        if (err) {
+          console.error('Erro ao atualizar visualizações do livro:', err);
+          connection.rollback(() => {
+            res.status(500).send('Erro ao atualizar visualizações do livro');
+          });
+          return;
+        }
+
+        connection.commit(err => {
+          if (err) {
+            console.error('Erro ao confirmar a transação:', err);
+            connection.rollback(() => {
+              res.status(500).send('Erro interno do servidor');
+            });
+            return;
+          }
+
+          res.status(200).json({
+            ...book,
+            views: book.views + 1
+          });
+        });
+      });
     });
   });
 });
@@ -292,10 +328,11 @@ app.get('/books/:bookId', (req, res) => {
 
 app.post('/books/:bookId/comments', verifyToken, (req, res) => {
   const { bookId } = req.params;
-  const { userId, comment } = req.body;
+  const { comment } = req.body;
+  const userId = req.userId; // O ID do usuário é extraído do token de autorização
 
-  if (!userId || !comment) {
-    return res.status(400).send('ID do usuário e comentário são obrigatórios');
+  if (!comment) {
+    return res.status(400).send('Comentário é obrigatório');
   }
 
   const addCommentQuery = 'INSERT INTO comments (book_id, user_id, comment) VALUES (?, ?, ?)';
