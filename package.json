@@ -1,14 +1,24 @@
 {
   "name": "book",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A web application for managing books, users, and comments",
+  "main": "src/app.js",
   "scripts": {
+    "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "book",
+    "library",
+    "management",
+    "express",
+    "mysql",
+    "jwt",
+    "bcrypt",
+    "api"
+  ],
+  "author": "Your Name",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
