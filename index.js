@@ -204,6 +204,27 @@ app.get('/books/:bookId', (req, res) => {
 });
 
 
+app.put('/books/:bookId/views', (req, res) => {
+  const bookId = req.params.bookId;
+
+  const updateViewsQuery = 'UPDATE books SET views = views + 1 WHERE id = ?';
+
+  connection.query(updateViewsQuery, [bookId], (err, result) => {
+    if (err) {
+      console.error('Erro ao atualizar as visualizações do livro:', err);
+      res.status(500).send('Erro ao atualizar as visualizações do livro');
+    } else {
+      if (result.affectedRows === 1) {
+        console.log('Visualizações do livro atualizadas com sucesso');
+        res.status(200).send('Visualizações do livro atualizadas com sucesso');
+      } else {
+        console.error('Erro ao atualizar as visualizações do livro');
+        res.status(500).send('Erro ao atualizar as visualizações do livro');
+      }
+    }
+  });
+});
+
 app.post('/books/:bookId/comments', verifyToken, (req, res) => {
   const { bookId } = req.params;
   const { userId, comment } = req.body;
