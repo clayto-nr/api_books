@@ -133,17 +133,48 @@ app.post('/login', (req, res) => {
   });
 });
 
-app.get('/books', (req, res) => {
-  const getBooksQuery = 'SELECT * FROM books';
-  connection.query(getBooksQuery, (err, results) => {
+// Rota para criar um novo livro
+app.post('/books', verifyToken, (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  jwt.verify(token, 'seu_segredo', (err, decoded) => {
     if (err) {
-      console.error('Erro ao buscar livros:', err);
-      res.status(500).send('Erro ao buscar livros');
-    } else {
-      res.status(200).json(results);
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).send('Token expirado');
+      } else {
+        return res.status(403).send('Token inválido');
+      }
     }
+    const userId = decoded.userId;
+    const { name, description } = req.body;
+    const newBook = { id: books.length + 1, name, description, userId };
+    books.push(newBook);
+    res.status(200).send('Livro criado com sucesso');
   });
 });
+
+
+const books = [];
+
+app.get('/my-books', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).send('Token não fornecido');
+  }
+
+  jwt.verify(token, 'seu_segredo', (err, decoded) => {
+    if (err) {
+      return res.status(403).send('Token inválido');
+    }
+    const userId = decoded.userId;
+    const userBooks = books.filter(book => book.userId === userId);
+    res.status(200).json(userBooks);
+  });
+});
+
 
 app.get('/books/:bookId', (req, res) => {
   const bookId = req.params.bookId;
