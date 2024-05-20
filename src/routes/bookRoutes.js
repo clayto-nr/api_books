@@ -4,8 +4,8 @@ const { verifyToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.post('/books', verifyToken, createBook);
-router.get('/books', getAllBooks);
+router.post('/create', verifyToken, createBook);
+router.get('/', getAllBooks);
 router.get('/my-books', verifyToken, getMyBooks);
 router.get('/:bookId', getBookById);
 

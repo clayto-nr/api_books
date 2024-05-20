@@ -20,8 +20,8 @@ app.use((req, res, next) => {
 });
 
 app.use('/', userRoutes);
-app.use('/', bookRoutes);
-app.use('/books', commentRoutes);
+app.use('/books', bookRoutes);
+app.use('/comment', commentRoutes);
 
 app.get('/', (req, res) => {
   res.send('Servidor em execução! 1.0');
