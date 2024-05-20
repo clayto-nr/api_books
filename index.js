@@ -133,24 +133,35 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Rota para criar um novo livro
 app.post('/books', verifyToken, (req, res) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  jwt.verify(token, 'seu_segredo', (err, decoded) => {
+  const { name, description } = req.body;
+
+  const userId = req.userId; // Obtendo o ID do usuário a partir do token
+
+  const createBookQuery = 'INSERT INTO books (name, description, user_id) VALUES (?, ?, ?)';
+  connection.query(createBookQuery, [name, description, userId], (err, result) => {
     if (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.status(401).send('Token expirado');
-      } else {
-        return res.status(403).send('Token inválido');
-      }
+      console.error('Erro ao criar livro:', err);
+      return res.status(500).send('Erro ao criar livro');
+    } 
+    
+    if (result.affectedRows === 1) {
+      const newBookId = result.insertId; // Obtendo o ID do novo livro criado
+      console.log('Livro criado com sucesso');
+      // Consulta para obter o novo livro criado
+      const getNewBookQuery = 'SELECT * FROM books WHERE id = ?';
+      connection.query(getNewBookQuery, [newBookId], (err, bookResult) => {
+        if (err) {
+          console.error('Erro ao buscar o novo livro criado:', err);
+          return res.status(500).send('Erro ao buscar o novo livro criado');
+        }
+        const newBook = bookResult[0]; // O resultado da consulta é um array, então pegamos o primeiro elemento
+        res.status(200).json(newBook); // Retornando o novo livro criado como resposta
+      });
+    } else {
+      console.error('Erro ao criar livro');
+      res.status(500).send('Erro ao criar livro');
     }
-    const userId = decoded.userId;
-    const { name, description } = req.body;
-    const newBook = { id: books.length + 1, name, description, userId };
-    books.push(newBook);
-    res.status(200).send('Livro criado com sucesso');
   });
 });
 
@@ -171,23 +182,20 @@ app.get('/books', (req, res) => {
 
 const books = [];
 
-app.get('/my-books', (req, res) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+app.get('/my-books', verifyToken, (req, res) => {
+  const userId = req.userId; // Obtendo o ID do usuário a partir do token
 
-  if (!token) {
-    return res.status(401).send('Token não fornecido');
-  }
-
-  jwt.verify(token, 'seu_segredo', (err, decoded) => {
+  const getMyBooksQuery = 'SELECT * FROM books WHERE user_id = ?';
+  connection.query(getMyBooksQuery, [userId], (err, results) => {
     if (err) {
-      return res.status(403).send('Token inválido');
+      console.error('Erro ao buscar livros do usuário:', err);
+      res.status(500).send('Erro ao buscar livros do usuário');
+    } else {
+      res.status(200).json(results);
     }
-    const userId = decoded.userId;
-    const userBooks = books.filter(book => book.userId === userId);
-    res.status(200).json(userBooks);
   });
 });
+
 
 
 app.get('/books/:bookId', (req, res) => {
