@@ -203,6 +203,39 @@ app.get('/books/:bookId', (req, res) => {
   const getBookQuery = 'SELECT * FROM books WHERE id = ?';
   const updateViewsQuery = 'UPDATE books SET views = views + 1 WHERE id = ?';
 
+  connection.query(getBookQuery, [bookId], (err, result) => {
+    if (err) {
+      console.error('Erro ao buscar livro:', err);
+      res.status(500).send('Erro interno do servidor');
+      return;
+    }
+
+    if (result.length === 0) {
+      res.status(404).send('Livro não encontrado');
+      return;
+    }
+
+    const book = result[0];
+
+    connection.query(updateViewsQuery, [bookId], (err) => {
+      if (err) {
+        console.error('Erro ao atualizar visualizações do livro:', err);
+        res.status(500).send('Erro interno do servidor');
+        return;
+      }
+
+      res.status(200).json(book);
+    });
+  });
+});
+
+
+
+app.get('/books/:bookId', (req, res) => {
+  const bookId = req.params.bookId;
+  const getBookQuery = 'SELECT * FROM books WHERE id = ?';
+  const updateViewsQuery = 'UPDATE books SET views = views + 1 WHERE id = ?';
+
   connection.beginTransaction(err => {
     if (err) {
       console.error('Erro ao iniciar a transação:', err);
@@ -256,27 +289,6 @@ app.get('/books/:bookId', (req, res) => {
   });
 });
 
-
-app.put('/books/:bookId/views', (req, res) => {
-  const bookId = req.params.bookId;
-
-  const updateViewsQuery = 'UPDATE books SET views = views + 1 WHERE id = ?';
-
-  connection.query(updateViewsQuery, [bookId], (err, result) => {
-    if (err) {
-      console.error('Erro ao atualizar as visualizações do livro:', err);
-      res.status(500).send('Erro ao atualizar as visualizações do livro');
-    } else {
-      if (result.affectedRows === 1) {
-        console.log('Visualizações do livro atualizadas com sucesso');
-        res.status(200).send('Visualizações do livro atualizadas com sucesso');
-      } else {
-        console.error('Erro ao atualizar as visualizações do livro');
-        res.status(500).send('Erro ao atualizar as visualizações do livro');
-      }
-    }
-  });
-});
 
 app.post('/books/:bookId/comments', verifyToken, (req, res) => {
   const { bookId } = req.params;
