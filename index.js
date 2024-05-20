@@ -155,6 +155,20 @@ app.post('/books', verifyToken, (req, res) => {
 });
 
 
+// Rota para buscar todos os livros
+app.get('/books', (req, res) => {
+  const getAllBooksQuery = 'SELECT * FROM books';
+  connection.query(getAllBooksQuery, (err, results) => {
+    if (err) {
+      console.error('Erro ao buscar livros:', err);
+      res.status(500).send('Erro ao buscar livros');
+    } else {
+      res.status(200).json(results);
+    }
+  });
+});
+
+
 const books = [];
 
 app.get('/my-books', (req, res) => {
