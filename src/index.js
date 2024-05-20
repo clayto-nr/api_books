@@ -19,9 +19,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/api/users', userRoutes);
-app.use('/api/books', bookRoutes);
-app.use('/api/comments', commentRoutes);
+app.use('/', userRoutes);
+app.use('/', bookRoutes);
+app.use('/books', commentRoutes);
 
 app.get('/', (req, res) => {
   res.send('Servidor em execução! 1.0');

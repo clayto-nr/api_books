@@ -74,45 +74,54 @@ const getMe = (req, res) => {
   });
 };
 
-const getUsersWithBooks = (req, res) => {
-  const getUsersQuery = 'SELECT id, username, email FROM users_table';
-  connection.query(getUsersQuery, (err, users) => {
+
+
+const getBooksByUserId = (req, res) => {
+  const userId = req.params.userId;
+
+  // Consulta SQL para encontrar todos os livros associados ao usuário pelo ID
+  const getBooksQuery = 'SELECT * FROM books WHERE user_id = ?';
+
+  connection.query(getBooksQuery, [userId], (err, books) => {
     if (err) {
-      console.error('Erro ao buscar usuários:', err);
-      res.status(500).send('Erro ao buscar usuários');
-    } else {
-      const usersWithBooks = [];
-      const getBooksQuery = 'SELECT * FROM books WHERE user_id = ?';
-      let count = 0;
-
-      users.forEach(user => {
-        connection.query(getBooksQuery, [user.id], (err, books) => {
-          if (err) {
-            console.error(`Erro ao buscar livros do usuário ${user.id}:`, err);
-            res.status(500).send(`Erro ao buscar livros do usuário ${user.id}`);
-          } else {
-            const userWithBooks = {
-              id: user.id,
-              username: user.username,
-              email: user.email,
-              books: books
-            };
-            usersWithBooks.push(userWithBooks);
-            count++;
-
-            if (count === users.length) {
-              res.status(200).json(usersWithBooks);
-            }
-          }
-        });
-      });
+      console.error('Erro ao buscar livros do usuário:', err);
+      return res.status(500).send('Erro ao buscar livros do usuário');
     }
+
+    res.status(200).json(books);
   });
 };
 
-module.exports = {
-  registerUser,
-  loginUser,
-  getMe,
-  getUsersWithBooks
-};
+const usersSearch = (req, res) => {
+    const { username } = req.query;
+  
+    // Verificar se o nome de usuário foi fornecido como parâmetro de consulta
+    if (!username) {
+      return res.status(400).send('Nome de usuário não fornecido.');
+    }
+  
+    const getUsersQuery = 'SELECT id, username FROM users_table WHERE username LIKE ?';
+    connection.query(getUsersQuery, [`${username}%`], (err, users) => {
+      if (err) {
+        console.error('Erro ao buscar usuários:', err);
+        return res.status(500).send('Erro ao buscar usuários');
+      }
+  
+      if (users.length === 0) {
+        return res.status(404).send('Usuários não encontrados.');
+      }
+  
+      res.status(200).json(users);
+    });
+  };
+  
+
+
+
+  module.exports = {
+    registerUser,
+    loginUser,
+    getMe,
+    getBooksByUserId,
+    usersSearch
+  };
