@@ -352,6 +352,7 @@ app.post('/books/:bookId/comments', verifyToken, (req, res) => {
   });
 });
 
+
 app.get('/my-books/:userId', verifyToken, (req, res) => {
   const userId = req.params.userId;
   const getMyBooksQuery = 'SELECT * FROM books WHERE user_id = ?';
